@@ -4,7 +4,6 @@
 # *.jar
 # *.war
 
-build/
 .gradle
 
 # gwt caches and compiled units #
