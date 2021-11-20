@@ -1,0 +1,146 @@
+// (ATB)
+
+//plugins {
+//    id "fr.putnami.gwt" version "0.4.0"
+//}
+
+/*buildscript {
+	repositories {
+		maven {
+			url "https://plugins.gradle.org/m2/"
+		}
+	}
+	dependencies {
+		classpath "gradle.plugin.fr.putnami.gwt:putnami-gradle-plugin:0.6.1"
+	}
+}*/
+
+plugins {
+	id 'java'
+	id 'java-library'
+	id 'war'
+	id 'maven'
+	id 'eclipse'
+	id "fr.putnami.gwt" version "0.6.1"
+	id 'jacoco'
+}
+
+sourceSets {
+	main.java.srcDirs = ['src/main']
+	test.java.srcDirs = ['src/test']
+}
+
+/*plugins {
+	id 'maven-publish'
+}*/
+
+
+
+//Java version compatibility to use when compiling Java source.
+sourceCompatibility = 11
+//Java version to generate classes for.
+targetCompatibility = 11
+//Script Version
+version = '1.0'
+ 
+repositories { 
+	mavenCentral() 
+}
+
+dependencies {
+	implementation 'com.google.gwt:gwt-user:2.9.0'
+	implementation group: 'com.google.gwt', name: 'gwt', version: '2.9.0', ext: 'pom'
+	compileOnly group: 'com.google.gwt', name: 'gwt-dev', version: '2.9.0'
+	runtimeOnly group: 'com.google.web.bindery', name: 'requestfactory-server', version: '2.9.0'
+	testCompile 'junit:junit:4.12'
+ 	testCompile 'org.easymock:easymock:2.5.2'
+	compile 'net.sourceforge.plantuml:plantuml:8001'
+}
+
+javadoc {
+    options.addStringOption("sourcepath", "")
+}
+
+
+// If we woant to use the default ant build inside gradle
+// ant.importBuild "build.xml"
+
+putnami {
+
+	module 'pt.isep.cms.Showcase'
+	//module 'com.google.gwt.sample.contacts.Contacts'
+	
+	/** add gwt nature on eclipse project. require apply plugin: 'eclipse' to work. default : false*/
+	googlePluginEclipse = true
+
+	gwtVersion='2.9.0'
+	
+	compile {
+		sourceLevel = '11'
+	}
+	
+	jetty {
+        /** enable debugging. */
+        debugJava = true
+        /** debug port to listen. */
+        debugPort = 8000
+        /** wait for debugger attachment. */
+        debugSuspend = false
+    }
+}
+
+// Jacoco
+jacocoTestReport {
+    reports {
+        xml.enabled false
+        csv.enabled false
+    }
+}
+
+// This task generates the coverage report for the integration tests.
+// Notice that it only includes data about the server code sice Jaccoco is not able to get data about cliente code that is transpiled to javascript
+task jacocoIntegrationReport(type: JacocoReport) {
+	sourceSets sourceSets.main
+
+	executionData.from fileTree("${buildDir}/jacoco/integrationTest.exec")
+
+	reports {
+		html.enabled = true
+		xml.enabled = false
+		csv.enabled = false
+	}
+}
+
+// Integration Tests
+task integrationTest(type: Test) {
+	filter { 
+		//all GWT unit tests, by naming convention
+      	includeTestsMatching "*GWTTest*"
+	}    
+    jacoco { 
+    		//append = true
+    		//enabled = true
+    		//classDumpFile = file("${buildDir}/jacoco/classpathdumps")
+    		
+    		excludes = ["com/steadystate/**"] 
+    }
+    // These Properties are required to run gwt integration tests
+    systemProperties['gwt.args'] = "-devMode -logLevel WARN -war www-test"
+}
+
+tasks.withType(Test) {
+    reports.html.destination = file("${reporting.baseDir}/${name}")
+}
+
+// Unit Tests
+test { 
+	filter { 
+		//all JRE unit tests, by naming convention
+      	includeTestsMatching "*JRETest*"
+	}
+    jacoco { 
+    		//append = true
+    		//enabled = true
+  		//classDumpFile = file("${buildDir}/jacoco/classpathdumps")
+    }	
+}
